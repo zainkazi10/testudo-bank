@@ -1582,4 +1582,49 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
     cryptoTransactionTester.test(cryptoTransaction);
   }
 
+
+  /**
+   * Verifies the simplest interest rate case.
+   * The customer's Balance in the Customers table should be increased
+   * by the balance interest rate after 5 deposits.
+   * 
+   * @throws SQLException
+   * @throws ScriptException
+   */
+  @Test 
+  public void testSimpleInterestRateApplied() throws ScriptException, SQLException {
+    // initialize customer1 with a balance of $100 represented as pennies in the DB.
+    double BALANCE_INTEREST_RATE = 1.015;
+    double CUSTOMER1_BALANCE = 100.00;
+    int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+    MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, 0);
+
+    // Prepare Deposit Form to Deposit $20.00 to customer 1's account.
+    double CUSTOMER1_AMOUNT_TO_DEPOSIT = 20.00; // user input is in dollar amount, not pennies.
+    User customer1DepositFormInputs = new User();
+    customer1DepositFormInputs.setUsername(CUSTOMER1_ID);
+    customer1DepositFormInputs.setPassword(CUSTOMER1_PASSWORD);
+    customer1DepositFormInputs.setAmountToDeposit(CUSTOMER1_AMOUNT_TO_DEPOSIT); 
+
+
+    // submit 5 deposits of $20.00 to customer 1's account
+    for (int i = 0 ; i < 5; i++) {
+      controller.submitDeposit(customer1DepositFormInputs);
+    }
+    double CUSTOMER1_TOTAL_AMOUNT_DEPOSITED = 100.00;
+
+    // fetch updated data from the DB
+    List<Map<String,Object>> customersTableData = jdbcTemplate.queryForList("SELECT * FROM Customers;");
+
+    Map<String,Object> customer1Data = customersTableData.get(0);
+
+
+    // verify customer balance was increased by the balance interest rate
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE = (CUSTOMER1_BALANCE + CUSTOMER1_TOTAL_AMOUNT_DEPOSITED)*BALANCE_INTEREST_RATE ;
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_EXPECTED_FINAL_BALANCE);
+    assertEquals(CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES, (int)customer1Data.get("Balance"));
+
+
+  }
+
 }
