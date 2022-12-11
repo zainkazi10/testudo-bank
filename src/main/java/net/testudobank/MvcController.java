@@ -180,6 +180,22 @@ public class MvcController {
 		return "sellcrypto_form";
 	}
 
+  /**
+   * HTML GET request handler that serves the "budget_form" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's withdraw form input.
+   * 
+   * @param model
+   * @return "withdraw_form" page
+   */
+  @GetMapping("/budget")
+	public String showBudgetForm(Model model) {
+    User user = new User();
+		model.addAttribute("user", user);
+		return "budget_form";
+	}
+  
+
   //// HELPER METHODS ////
 
   /**
@@ -804,6 +820,46 @@ public class MvcController {
     } else {
       return "welcome";
     }
+  }
+
+  /**
+   * HTML POST request handler for the Budget Form page.
+   * 
+   * User must enter percentages that add up to 100
+   * 
+   * @param user
+   * @return "account_info" page if withdraw request is valid. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/budget")
+  public String submitBudget(@ModelAttribute("user") User user) {
+    String userID = user.getUsername();
+    String userPasswordAttempt = user.getPassword();
+    String userPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    //// Invalid Input/State Handling ////
+
+    // unsuccessful login
+    if (userPasswordAttempt.equals(userPassword) == false) {
+      return "welcome";
+    }
+
+
+    // Percentages must add up to $100
+    double userWantsPercentage = user.getWantsBudgetPercentage();
+    double userNeedsPercentage = user.getNeedsBudgetPercentage();
+    double userSavingsPercentage = user.getSavingsBudgetPercentage();
+
+    if (userNeedsPercentage + userWantsPercentage + userSavingsPercentage != 100) {
+      return "welcome";
+    }
+
+    int userBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID);
+    user.setNeedsBudget(Math.round(userBalanceInPennies * (userNeedsPercentage/100)));
+    user.setWantsBudget(Math.round(userBalanceInPennies * (userWantsPercentage/100)));
+    user.setSavingsBudget(Math.round(userBalanceInPennies * (userSavingsPercentage/100)));
+
+    return "budget_view";
+
   }
 
   /**
