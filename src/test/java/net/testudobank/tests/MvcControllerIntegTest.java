@@ -1117,6 +1117,74 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
   }
 
   /**
+ * This test will test a scenario where the user inputs percentages that do
+ * not add up too 100%. In this case, the user should not be able to view their
+ * budget and will be redirected to the home page.
+ * 
+ * @throws SQLException
+ * @throws ScriptException
+ */
+  @Test
+  public void testBudgetIncorrectPercentages() throws SQLException, ScriptException{
+    
+    // initialize customer1 
+    double CUSTOMER1_BALANCE = 100.00;
+    int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+    MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, 0);
+
+    // initiialize user for the budget form
+    User CUSTOMER1 = new User();
+    CUSTOMER1.setUsername(CUSTOMER1_ID);
+    CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
+
+    //Set budget percentages so that they do not add up to 100
+    CUSTOMER1.setWantsBudgetPercentage(20.0);
+    CUSTOMER1.setNeedsBudgetPercentage(10.0);
+    CUSTOMER1.setSavingsBudgetPercentage(5.0);
+
+
+    String returnedPage = controller.submitBudget(CUSTOMER1);
+
+    // Make sure that the user is returned to home since the budget percentages do not add up to 100
+    assertEquals("welcome", returnedPage);
+  }
+
+/**
+ * This test will test a scenario where the user inputs percentages that do
+ * add up too 100%. In this case, the user should be shown the budget_view 
+ * page.
+ * 
+ * @throws SQLException
+ * @throws ScriptException
+ */
+@Test
+public void testBudgetCorrectPercentages() throws SQLException, ScriptException{
+  
+  // initialize customer1 
+  double CUSTOMER1_BALANCE = 100.00;
+  int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+  MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, 0);
+
+  // initiialize user for the budget form
+  User CUSTOMER1 = new User();
+  CUSTOMER1.setUsername(CUSTOMER1_ID);
+  CUSTOMER1.setPassword(CUSTOMER1_PASSWORD);
+
+  //Set budget percentages so that they do not add up to 100
+  CUSTOMER1.setWantsBudgetPercentage(30.0);
+  CUSTOMER1.setNeedsBudgetPercentage(30.0);
+  CUSTOMER1.setSavingsBudgetPercentage(40.0);
+
+
+  String returnedPage = controller.submitBudget(CUSTOMER1);
+
+  // Make sure that the user is returned to home since the budget percentages do not add up to 100
+  assertEquals("budget_view", returnedPage);
+}
+
+
+
+  /**
    * Enum for {@link CryptoTransactionTester}
    */
   @AllArgsConstructor
@@ -1813,5 +1881,6 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
     double CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_EXPECTED_FINAL_BALANCE);
     assertEquals(CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES, (int)customer1Data.get("Balance"));
   }
+
 
 }
